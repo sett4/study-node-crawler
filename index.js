@@ -1,7 +1,7 @@
 "use strict";
 
 var EventEmitter2 = require('eventemitter2').EventEmitter2;
-var urlUtil = require('url');
+var url = require('url');
 var _ = require('lodash');
 
 
@@ -16,7 +16,7 @@ var Crawler = (function(){
         this._processedJob = 0;
 
         this.visitedList = {};
-        this.queue = [];
+        this._stack = [];
         
         this.on('push', this.onPush);
         this.on('process', this.onProcess);
@@ -51,17 +51,17 @@ var Crawler = (function(){
     
     Crawler.prototype.onPush = function(url){
         var self = this;
-        self.queue.push({url: url});
+        self._stack.push({url: url});
         self._totalJob++;
         self.emit('process');
     };
     
     Crawler.prototype.onProcess = function(){
         var self = this;
-        if (self.queue.length>0 && self._runningWorker < self.concurrency) {
+        if (self._stack.length>0 && self._runningWorker < self.concurrency) {
             self._runningWorker++;
 
-            var url = self.queue.pop().url;
+            var url = self._stack.pop().url;
             self.fetch(url, self.scrape, function(){
                 setTimeout(function(){
                     self._runningWorker--;
@@ -92,7 +92,7 @@ function scrape(crawler, $, res) {
     };
 
     function scrapeRankingLink(crawler, $, res, i, e) {
-        var nextUrl = urlUtil.resolve(res.request.uri, $(e).attr('href'));
+        var nextUrl = url.resolve(res.request.uri, $(e).attr('href'));
         if (crawler.visitedList[nextUrl] == undefined) {
             crawler.emit('push', nextUrl);
         }
@@ -100,11 +100,11 @@ function scrape(crawler, $, res) {
 
     function scrapeTagLink(crawler, $, res, text, i, e) {
         text = text + "#" + $(e).text();
-        var url = urlUtil.resolve(res.request.uri, $(e).attr('href'));
+        var u = url.resolve(res.request.uri, $(e).attr('href'));
 
-        if (crawler.visitedList.hasOwnProperty(url) == false) {
-            crawler.visitedList[url] = text;
-            crawler.emit('fetched', {url:url, text:text});
+        if (crawler.visitedList.hasOwnProperty(u) == false) {
+            crawler.visitedList[u] = text;
+            crawler.emit('fetched', {url:u, text:text});
         }
     }
 
@@ -130,7 +130,7 @@ crawler.on('error', function(err, url){
 
 var monitorHandle = setInterval(function(){
     console.error("------");
-    console.error(crawler.queue.length+' jobs on queued');
+    console.error(crawler._stack.length+' jobs on queued');
     console.error(crawler._runningWorker+ ' running workers');
     console.error(crawler._totalJob +' jobs total');
     console.error(crawler._processedJob +' jobs processed');
