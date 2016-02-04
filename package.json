@@ -1,0 +1,17 @@
+{
+  "name": "rakuten-ranking",
+  "version": "1.0.0",
+  "description": "scrape rakuten ranking list",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sett4",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio-httpcli": "^0.6.3",
+    "eventemitter2": "^0.4.14"
+  },
+  "devDependencies": {
+  }
+}
