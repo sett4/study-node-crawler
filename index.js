@@ -51,6 +51,11 @@ var Crawler = (function(){
     
     Crawler.prototype.onPush = function(url){
         var self = this;
+
+        if (self._totalJob == 0) {
+            self.emit('start');
+        }
+
         self._stack.push({url: url});
         self._totalJob++;
         self.emit('process');
@@ -58,6 +63,7 @@ var Crawler = (function(){
     
     Crawler.prototype.onProcess = function(){
         var self = this;
+        
         if (self._stack.length>0 && self._runningWorker < self.concurrency) {
             self._runningWorker++;
 
@@ -109,7 +115,7 @@ function scrape(crawler, $, res) {
     }
 
     var text = $('#rnk_pnkz').text().replaceAll('[\t\n]', '');
-    crawler.emit('fetched', {url: res.request.uri, text: text});
+    crawler.emit('fetched', {url: res.request.uri.href, text: text});
 
     // リンク一覧を表示
     var bindedAcceptFunc = isAcceptablePath.bind(this, crawler, $);
@@ -127,17 +133,18 @@ crawler.on('error', function(err, url){
     console.error(err);
 });
 
+crawler.on('start', function(){
+    var monitorHandle = setInterval(function(){
+        console.error("------");
+        console.error(crawler._stack.length+' jobs on queued');
+        console.error(crawler._runningWorker+ ' running workers');
+        console.error(crawler._totalJob +' jobs total');
+        console.error(crawler._processedJob +' jobs processed');
+    }, 3000);
 
-var monitorHandle = setInterval(function(){
-    console.error("------");
-    console.error(crawler._stack.length+' jobs on queued');
-    console.error(crawler._runningWorker+ ' running workers');
-    console.error(crawler._totalJob +' jobs total');
-    console.error(crawler._processedJob +' jobs processed');
-}, 3000);
-
-crawler.on('end', function(){
-    clearInterval(monitorHandle);    
+    crawler.on('end', function(){
+        clearInterval(monitorHandle);    
+    });
 });
 
 crawler.emit('push', 'http://ranking.rakuten.co.jp/daily/');
